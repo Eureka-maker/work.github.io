@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>泰州分公司经营会待办事项看板</title>
+<style>
+:root {
+  --blue: #3b82f6; --blue-light: #eff6ff; --blue-dark: #1e40af;
+  --amber: #f59e0b; --amber-light: #fffbeb; --amber-dark: #b45309;
+  --emerald: #10b981; --emerald-light: #ecfdf5; --emerald-dark: #065f46;
+  --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0; --slate-300: #cbd5e1;
+  --slate-400: #94a3b8; --slate-500: #64748b; --slate-600: #475569; --slate-700: #334155; --slate-800: #1e293b;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f0f2f5; color: var(--slate-800); min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  background: linear-gradient(135deg, #0f2557 0%, #1a4b8c 40%, #2563eb 100%);
+  color: #fff; padding: 24px 40px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 4px 24px rgba(15,37,87,0.25);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;
+}
+.header-left h1 { font-size: 21px; font-weight: 700; margin-bottom: 3px; }
+.header-left p { font-size: 12.5px; opacity: 0.75; }
+.header-actions { display: flex; gap: 8px; }
+.btn-expand { padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: #fff;
+  cursor: pointer; transition: all 0.15s; backdrop-filter: blur(8px); }
+.btn-expand:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Container ── */
+.container { max-width: 1280px; margin: 0 auto; padding: 20px 28px; }
+
+/* ── Stats ── */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: #fff; border-radius: 12px; padding: 18px 22px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 14px; }
+.stat-num { font-size: 26px; font-weight: 700; line-height: 1.1; }
+.stat-label { font-size: 11.5px; color: var(--slate-500); margin-top: 2px; }
+
+/* ── Filters ── */
+.filter-bar { background: #fff; border-radius: 12px; padding: 14px 22px; margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 3px; min-width: 150px; }
+.filter-group label { font-size: 10.5px; font-weight: 700; color: var(--slate-400);
+  text-transform: uppercase; letter-spacing: 0.7px; }
+.filter-group select { padding: 8px 32px 8px 11px; border: 1.5px solid var(--slate-200);
+  border-radius: 8px; font-size: 13px; background: #fff; color: var(--slate-700);
+  cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; }
+.filter-group select:focus { outline: none; border-color: var(--blue); }
+.filter-clear { padding: 8px 18px; background: var(--slate-100); border: none; border-radius: 8px;
+  font-size: 12.5px; font-weight: 500; color: var(--slate-600); cursor: pointer; }
+.filter-clear:hover { background: var(--slate-200); }
+.filter-result { margin-left: auto; font-size: 12.5px; color: var(--slate-500); align-self: center; white-space: nowrap; }
+.filter-result strong { color: var(--blue-dark); font-size: 15px; }
+
+/* ── Category Section ── */
+.cat-section { margin-bottom: 22px; }
+.cat-header { display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+  border-radius: 12px 12px 0 0; font-size: 15px; font-weight: 700; }
+.cat-header.cat1 { background: linear-gradient(135deg, var(--blue-light), #dbeafe); color: var(--blue-dark); }
+.cat-header.cat2 { background: linear-gradient(135deg, var(--amber-light), #fef3c7); color: var(--amber-dark); }
+.cat-header.cat3 { background: linear-gradient(135deg, var(--emerald-light), #d1fae5); color: var(--emerald-dark); }
+.cat-header .cat-icon { font-size: 20px; }
+.cat-count { font-size: 12.5px; font-weight: 400; opacity: 0.7; margin-left: auto; }
+
+/* ── Sub-category grid ── */
+.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px; background: #fff; border-radius: 0 0 12px 12px; padding: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+
+/* ── Sub-category card (collapsed) ── */
+.sub-card {
+  border: 1.5px solid var(--slate-100); border-radius: 10px; padding: 14px 16px;
+  cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; gap: 10px;
+  position: relative; background: #fff;
+}
+.sub-card:hover { border-color: var(--slate-300); box-shadow: 0 3px 12px rgba(0,0,0,0.06); transform: translateY(-1px); }
+.sub-card.cat1:hover { border-color: #93c5fd; }
+.sub-card.cat2:hover { border-color: #fcd34d; }
+.sub-card.cat3:hover { border-color: #6ee7b7; }
+.sub-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sub-card-name { font-size: 14px; font-weight: 700; color: var(--slate-700); }
+.sub-card-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sub-card-count { font-size: 22px; font-weight: 700; }
+.sub-card-count.cat1 { color: var(--blue); }
+.sub-card-count.cat2 { color: var(--amber); }
+.sub-card-count.cat3 { color: var(--emerald); }
+.sub-card-unit { font-size: 11px; color: var(--slate-400); }
+.sub-card-persons { display: flex; gap: 2px; flex-wrap: wrap; }
+.sub-avatar { width: 24px; height: 24px; border-radius: 50%; font-size: 10px; font-weight: 700;
+  color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sub-card-footer { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--slate-400); }
+.sub-card-chevron { font-size: 11px; color: var(--slate-300); transition: transform 0.2s; }
+.sub-card.expanded .sub-card-chevron { transform: rotate(180deg); }
+
+/* ── Expanded detail panel ── */
+.detail-panel {
+  grid-column: 1 / -1;
+  background: var(--slate-50); border-radius: 10px; margin-top: -2px; border: 1.5px solid var(--slate-200);
+  overflow: hidden; display: none;
+}
+.detail-panel.open { display: block; }
+.detail-header { padding: 12px 18px; background: #fff; border-bottom: 1px solid var(--slate-100);
+  display: flex; align-items: center; justify-content: space-between; }
+.detail-header h3 { font-size: 15px; font-weight: 700; color: var(--slate-700); }
+.detail-close { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--slate-200);
+  background: #fff; cursor: pointer; font-size: 16px; display: flex; align-items: center;
+  justify-content: center; color: var(--slate-400); transition: all 0.15s; }
+.detail-close:hover { background: var(--slate-100); color: var(--slate-700); }
+
+.detail-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 8px; padding: 12px; }
+.task-row { background: #fff; border-radius: 8px; padding: 12px 15px; border: 1px solid var(--slate-100);
+  transition: all 0.12s; display: flex; gap: 12px; align-items: flex-start; }
+.task-row:hover { border-color: var(--slate-300); }
+.task-row-left { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 38px; }
+.task-row-num { font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 5px;
+  background: var(--slate-100); color: var(--slate-500); font-family: "SF Mono", "Consolas", monospace; }
+.task-row-meeting { font-size: 9.5px; padding: 2px 5px; border-radius: 4px; background: #fdf2f8; color: #be185d;
+  font-weight: 500; text-align: center; line-height: 1.3; }
+.task-row-body { flex: 1; font-size: 13px; line-height: 1.6; color: var(--slate-700); min-width: 0; }
+.task-row-footer { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.task-row-person { font-size: 12px; font-weight: 600; color: var(--slate-600); white-space: nowrap; }
+.task-row-deadline { font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 500; white-space: nowrap; }
+.dl-urgent { background: #fef2f2; color: #dc2626; }
+.dl-ongoing { background: #f0fdf4; color: #16a34a; }
+.dl-none { background: var(--slate-100); color: var(--slate-400); }
+.dl-normal { background: var(--blue-light); color: var(--blue-dark); }
+
+/* ── Empty ── */
+.empty-state { text-align: center; padding: 70px 20px; color: var(--slate-400); }
+.empty-state .icon { font-size: 52px; margin-bottom: 14px; }
+.empty-state p { font-size: 14px; }
+
+@media (max-width: 800px) {
+  .header, .container { padding-left: 16px; padding-right: 16px; }
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+  .sub-grid { grid-template-columns: 1fr; }
+  .detail-tasks { grid-template-columns: 1fr; }
+  .filter-bar { flex-direction: column; align-items: stretch; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>📋 泰州分公司经营会 · 待办事项看板</h1>
+    <p>数据来源：2026年6月8日 / 2026年6月15日 业务经营会纪要 ｜ 共 106 项待办</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn-expand" onclick="expandAll()">📂 全部展开</button>
+    <button class="btn-expand" onclick="collapseAll()">📁 全部收起</button>
+  </div>
+</div>
+
+<div class="container">
+<div class="stats-row" id="statsRow"></div>
+
+<div class="filter-bar">
+  <div class="filter-group">
+    <label>📂 工作部署分类</label>
+    <select id="filterCat"><option value="all">全部类别</option>
+      <option value="分公司总经理潘总工作部署">分公司总经理潘总工作部署</option>
+      <option value="分公司副总经理薛总工作安排">分公司副总经理薛总工作安排</option>
+      <option value="各营业部总经理及各业务部门负责人本周工作计划">各营业部/业务部门工作计划</option></select>
+  </div>
+  <div class="filter-group">
+    <label>👤 责任人</label>
+    <select id="filterPerson"><option value="all">全部责任人</option></select>
+  </div>
+  <div class="filter-group">
+    <label>📅 会议时间</label>
+    <select id="filterMeeting"><option value="all">全部会议</option></select>
+  </div>
+  <button class="filter-clear" onclick="resetFilters()">🔄 重置</button>
+  <span class="filter-result">匹配 <strong id="filteredNum">106</strong> 条</span>
+</div>
+
+<div id="content"></div>
+</div>
+
+<script>
+const TASKS = [{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"AI落地","num":"1-1","task":"经营考核阶段得分排名看板细节完善：1、综合得分排名柱状图纵轴起点需由0修改为80。业务经营仪表盘细节完善：1、佣金收入能力周度分析报告中，席位份额和佣金收入能力两个指标，除对总量分析外，需增加对财富及机构客户的分析维度；2、新增信用账户周度分析报告中，需在营业部完成率排名表中增加月度缺口数值；3、smarT授权资产周度分析报告中，需增加各营业部提佣收入占分公司整体提佣收入比例的统计维度；4、金融产品销保周度分析报告中，对权益私募时点保有及销量表，权益私募时点保有数据需剔除B份额；5、高净值客户核心业务覆盖分析报告中，需将新员工的情况也列示在表中。","person":"沈子淇","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"AI落地","num":"1-2","task":"需将考核指标权重和上限的规则告诉龙虾，并且将各指标目标值是否存在上浮情况列示在看板中","person":"沈子淇","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"AI落地","num":"1-3","task":"进一步精简业务经营仪表盘，保留重点数据洞察","person":"沈子淇","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"重点业务推进","num":"2-1","task":"对重点权益公墓和配置宝两项业务，重点业务推进值加减分存在单一营业部持续扣分/减分的情况，各营业部总经理可结合营业部自身情况及后续对财富客户在产品方面的规划，与潘总探讨考核方案的完善修改","person":"各营业部负责人","deadline":"—"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"重点业务推进","num":"2-2","task":"对于业绩良好的管理人，各营业部负责人均可与潘总探讨入池及相关业务落地","person":"各营业部负责人","deadline":"持续"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"重点业务推进","num":"2-3","task":"SmarT二阶段数据看板可发给营业部，并对接到具体投顾，对开门红阶段活跃客户或二阶段活跃未满20天的客户建议寻找契机重新授权","person":"各营业部负责人","deadline":"持续"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"重点业务推进","num":"2-4","task":"股票组合交叉销售是分公司当前最重要的业务（现阶段目标是每日5万提佣收入），各营业部总经理需督导到每位员工，做好条件升佣全覆盖","person":"各营业部负责人","deadline":"持续"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-1","task":"营业部客户/银行活动持续督导","person":"薛总","deadline":"持续"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-2","task":"靖江富阳路营业部人员招聘需作为重点工作","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-3","task":"泰州兴化英武中路营业部需重点跟进好想来客户，完善沟通话术、提升专业度（例如与客户讨论添禄，建议以专业分析强化近期添禄业绩强劲的说服力，并每周向客户更新进展情况）","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-4","task":"泰州兴化英武中路营业部AI展示方面，建议AI应用方向与日常工作结合，并借鉴外部经验","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-5","task":"泰兴国庆西路营业部高净值客户覆盖率显著低于7%，需重点关注","person":"陶津","deadline":"—"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-6","task":"泰州分公司业务部对股票组合运营人员需有激励，例如5%的创收以积分形式作为对运营人员的激励","person":"周玉婷","deadline":"—"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-7","task":"泰州分公司业务部需强化高净值客户流转方案对全体员工的宣导","person":"周玉婷","deadline":"—"},{"meeting":"2026年6月15日","cat":"分公司总经理潘总工作部署","sub":"营业部督导","num":"3-8","task":"各营业部需查漏补缺，做好上半年考核冲刺（关注开户考核方案的调整）","person":"各营业部负责人","deadline":"2026-06-23"},{"meeting":"2026年6月15日","cat":"分公司副总经理薛总工作安排","sub":"获客","num":"1-1","task":"各营业部需做好与银行合作的台账报备工作","person":"各营业部负责人","deadline":"持续"},{"meeting":"2026年6月15日","cat":"分公司副总经理薛总工作安排","sub":"获客","num":"1-2","task":"各营业部银行端开户建议使用银行二维码，而非转介绍码","person":"各营业部负责人","deadline":"持续"},{"meeting":"2026年6月15日","cat":"分公司副总经理薛总工作安排","sub":"获客","num":"1-3","task":"重点督导业务部获客工作","person":"周玉婷","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"分公司副总经理薛总工作安排","sub":"获客","num":"1-4","task":"泰兴营业部确定美好超市获客方案","person":"陶津","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"分公司副总经理薛总工作安排","sub":"获客","num":"1-5","task":"跟进泰州学院经济与管理学院的校企合作事宜","person":"薛总","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"分公司副总经理薛总工作安排","sub":"股票组合交叉销售","num":"2-1","task":"重点督导靖江、泰兴、兴化三家营业部条件升佣交叉销售工作","person":"薛总","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"分公司副总经理薛总工作安排","sub":"股票组合交叉销售","num":"2-2","task":"敲定东三环、江北嘴两家营业部后续线下策略会相关事宜安排（即「投顾九州万里行」活动）","person":"薛总","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"1","task":"持续跟踪恩捷股份定增项目，周一上海拜访","person":"陶津","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"2","task":"中信、美好推动本周落地；申请中信银行开户二维码","person":"陶津","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"3","task":"持续跟踪标销、两融开户、smart和高净值客户覆盖","person":"陶津","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"4","task":"周二接待私募管理人至营业部交流、答疑","person":"陶津","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"5","task":"确定农商行产品切换","person":"陶津","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"1","task":"重点客户拜访：新开高净值客户王兴林拜访、高净值客户高总拜访、高净值客户张珩新开户跟踪、高净值潜客郝总开户","person":"苗根平","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"2","task":"沟通工行高港支行高净值客户活动","person":"苗根平","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"3","task":"私募配置客户挖掘","person":"苗根平","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"4","task":"零售客户smart推进","person":"苗根平","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"1","task":"魏万贵WeFund流程推进沟通","person":"蔡理昂","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"2","task":"侯剑锋家属账户开立及如意宝产品沟通（银行存款替代尝试）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"3","task":"燕翔WeFund流程跟进（入金、备案、下投安排）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"4","task":"先锋减持可转债账户服务事项沟通（中信银行）&交易服务特委交易执行沟通（6.17日减持安排）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"5","task":"6.25中信银行高净值客户活动名单及细节安排落地","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"6","task":"6.27靖江零距离活动管理人资源协调和流程确定","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"7","task":"正瀛智选产品入池沟通（WeFund下投目标）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"8","task":"超高净值客户拜访：朱X翔（上周未沟通，看后续客户时间安排）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"9","task":"督促员工做好高净值客户的覆盖拜访工作以及做好陪访相关安排","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"1","task":"重点客户拜访","person":"徐燕","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"2","task":"营业部半年各项业务开展情况的督促完成，重点升佣签约客户的覆盖与零售客户SmarT授权","person":"徐燕","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"3","task":"7月3日高净值客户活动的准备工作","person":"徐燕","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"1","task":"按预约时间与兴化联富刘总线下面谈，深度沟通产品配置方案，推进企业客户业务落地","person":"王晓彤","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"2","task":"周二带领连云港金控资方前往上海拜访量派机构，争取叠加Smart策略合作，拓展机构业务场景","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"3","task":"持续跟进全量储备目标客户，根据客户风险偏好精准匹配产品与策略，全力推进业绩转化","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"4","task":"常态化跟踪Smart、跃然策略运行表现，严格执行周度调仓、风险过滤机制，持续优化策略收益曲线","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"5","task":"持续深耕各大银行合作渠道，跟进潜在转介绍客户，稳步扩充高净值客群储备，做大渠道业务规模","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司业务部","num":"1","task":"各项业务推进，6月重点产品客户联系","person":"周玉婷","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司业务部","num":"2","task":"推广交叉销售的股票组合，并做好订阅客户跟投服务","person":"周玉婷","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司业务部","num":"3","task":"拟拜访高净值客户：曹*军总、徐*滨总、高*枫总","person":"周玉婷","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"1","task":"跟进添禄添选二号的入金和添增九号备案的情况","person":"黄婧","deadline":"2026-06-15"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"2","task":"融券打新业务各节点的跟进和管理人之间的沟通","person":"黄婧","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"3","task":"陕国投基金合同预审及经服协议流程","person":"黄婧","deadline":"—"},{"meeting":"2026年6月15日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"4","task":"泰分重点合作私募产品的业绩跟踪以及全市场管理人业绩情况","person":"黄婧","deadline":"—"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"AI落地","num":"1-1","task":"分公司成立AI工作推动小组，推动AI相关工作，包括AI创新创意大赛、创客练习生、每周分公司业务经营会纳入公司重要会议线上管理等","person":"分公司AI工作推动小组（潘总任组长）","deadline":"—"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"AI落地","num":"1-2","task":"本周完成分公司中台仪表盘构建","person":"沈子淇","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"AI落地","num":"1-3","task":"下周经营会汇报分享各营业部/业务部门AI应用场景","person":"各营业部负责人","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"高净值客户攻坚","num":"2-1","task":"高净值客户覆盖每周跟踪","person":"沈子淇","deadline":"每周持续"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"高净值客户攻坚","num":"2-2","task":"下周经营会汇报各营业部高净值客户内部流转方案","person":"各营业部负责人","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"高净值客户攻坚","num":"2-3","task":"邀请江西分公司在周二集体夕会全员培训私募与高客覆盖经验","person":"沈子淇","deadline":"2026-06-09"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"重点业务推进","num":"3-1","task":"完成关于提升开户考核权重的方案","person":"沈子淇","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"分公司总经理潘总工作部署","sub":"招聘","num":"4-1","task":"待定的2026春招候选人可请营业部负责人（靖江、兴化）再次沟通/面试/实习","person":"各营业部负责人","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"银证合作","num":"1-1","task":"兴业银行近期进企活动密集，各营业部需加强与兴业银行对接工作","person":"各营业部负责人","deadline":"持续"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"银证合作","num":"1-2","task":"完成兴化、姜堰等区域中信银行的合作对接调研","person":"薛总","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"股票组合交叉销售","num":"2-1","task":"开展天辰东、黄陂南等营业部组合路演工作","person":"—","deadline":"—"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"股票组合交叉销售","num":"2-2","task":"结合组合运营对标情况，督导营业部优化组合运营工作","person":"—","deadline":"—"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"股票组合交叉销售","num":"2-3","task":"关注交叉销售签约、跟买及创收情况","person":"—","deadline":"—"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"股票组合交叉销售","num":"2-4","task":"督导分公司原组合后期建设运营情况","person":"—","deadline":"—"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"客户拜访","num":"1-1","task":"拜访泰州学院、南师大泰州学院等学院，推进后续高校合作及财商成长营等相关工作","person":"—","deadline":"—"},{"meeting":"2026年6月8日","cat":"分公司副总经理薛总工作安排","sub":"招聘","num":"1-1","task":"参与26年春招面试工作","person":"—","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"1","task":"推进6月份金融产品销售工作","person":"陶津","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"2","task":"持续跟踪恩捷股份定增项目","person":"陶津","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰兴国庆西路营业部","num":"3","task":"跟踪高净值客户日常运维","person":"陶津","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"1","task":"重点客户拜访：高净值客户孙放、潜在高净值客户朱总、同城联盟潜客郝总、邓总等","person":"苗根平","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"2","task":"营业部周二客户线上活动（月度研判会）","person":"苗根平","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"3","task":"股票组合交叉销售、提升佣金净创收","person":"苗根平","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州永定东路营业部","num":"4","task":"零售客户 smart推进","person":"苗根平","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"1","task":"邮储银行靖江支行业务沟通","person":"蔡理昂","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"2","task":"江苏银行靖江支行合作推进（沟通下一步活动方案）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"3","task":"中信银行靖江支行本月活动沟通（6月25日 — 科技主题）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"4","task":"先锋减持交易服务沟通（6月9日，股份管理团队、存量股团队）","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"5","task":"燕X wefund定制流程跟进","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"6","task":"魏X贵 wefund方案沟通","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"7","task":"正瀛策略团队拜访沟通","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"8","task":"超高净值客户拜访：朱X翔","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"靖江富阳路营业部","num":"9","task":"黄陂南路营业部股票组合交流","person":"蔡理昂","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"1","task":"重点客户拜访，本周计划拜访李董、叶总（周三全程陪访）、蒋区长","person":"徐燕","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"2","task":"继续督促交叉销售升佣签约客户的覆盖与零售客户SmarT授权","person":"徐燕","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"3","task":"上半年产品销售任务的督促","person":"徐燕","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"4","task":"周三交叉销售路演、周四祥泰之声的参与","person":"徐燕","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"姜堰东大街营业部","num":"5","task":"投顾大赛员工建仓情况的督促","person":"徐燕","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"1","task":"民生银行私银中心携手兴化，约见相关负责人周二见面，进一步沟通高净值客户开户事宜","person":"王晓彤","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"2","task":"周三在兴化约见千朔投资的渠道总监徐帅毅，研究小龙虾","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"3","task":"本周继续跟进产品目标客户，争取私募产品销售客户","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州兴化英武中路营业部","num":"4","task":"营业部同事提供的高净值客户名单跟踪拜访，smart推荐，股票组合签约，权限开通","person":"王晓彤","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司业务部","num":"1","task":"各项业务推进，6月重点产品客户联系","person":"周玉婷","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司业务部","num":"2","task":"交叉销售的股票组合已上线，根据上周制定的推广计划执行","person":"周玉婷","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司业务部","num":"3","task":"参加26届春季校园招聘第二批次面试","person":"周玉婷","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司业务部","num":"4","task":"拜访超高净值客户曹总、郑总","person":"周玉婷","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"1","task":"添禄1000指增策略已入池，跟进产品合同及备案","person":"黄婧","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"2","task":"添禄添选二号专户资金的跟进及产品开户权限申请，下周需交易","person":"黄婧","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"3","task":"跟进信银理财融券打新业务，国金和恒生系统的对接，及东方红和机构业务部产品户的开户对接","person":"黄婧","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"4","task":"拜访计划：东兴资管、玉数投资、青琰投资、思益、善庆、添禄","person":"黄婧","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"5","task":"泰分重点合作私募产品的业绩跟踪以及全市场管理人业绩情况","person":"黄婧","deadline":"—"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"6","task":"拟拜访康为世纪","person":"黄亮","deadline":"2026-06-08"},{"meeting":"2026年6月8日","cat":"各营业部总经理及各业务部门负责人本周工作计划","sub":"泰州分公司机构部","num":"7","task":"约访中铁十六局苏北区负责人郭总","person":"黄亮","deadline":"—"}];
+
+// ====== Avatar colors ======
+const AVATARS = {"沈子淇":"#3b82f6","各营业部负责人":"#8b5cf6","薛总":"#f59e0b","蔡理昂":"#10b981","王晓彤":"#ec4899","陶津":"#f97316","周玉婷":"#06b6d4","苗根平":"#84cc16","徐燕":"#a855f7","黄婧":"#14b8a6","黄亮":"#e11d48","—":"#94a3b8","分公司AI工作推动小组（潘总任组长）":"#6366f1"};
+function ac(p) { return AVATARS[p]||('#'+((Math.abs(p.split('').reduce((h,c)=>((h<<5)-h)+c.charCodeAt(0),0))&0xFFFFFF)|0x808080).toString(16).padStart(6,'0')); }
+function ini(p) { if(!p||p==='—') return '—'; return p.replace(/（.*/,'').slice(0,2); }
+
+// ====== Filters ======
+const allPersons = [...new Set(TASKS.map(t=>t.person))].filter(p=>p&&p!=='—').sort();
+const allMeetings = [...new Set(TASKS.map(t=>t.meeting))].sort().reverse();
+const pSel = document.getElementById('filterPerson');
+allPersons.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;pSel.appendChild(o);});
+const mSel = document.getElementById('filterMeeting');
+allMeetings.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;mSel.appendChild(o);});
+
+function getFiltered(){
+  const cf=document.getElementById('filterCat').value,pf=document.getElementById('filterPerson').value,mf=document.getElementById('filterMeeting').value;
+  return TASKS.filter(t=>(cf==='all'||t.cat===cf)&&(pf==='all'||t.person===pf)&&(mf==='all'||t.meeting===mf));
+}
+
+function dcls(d){
+  if(!d||d==='—') return 'dl-none'; if(d==='持续'||d==='每周持续') return 'dl-ongoing';
+  const m=d.match(/(\d{4})-(\d{2})-(\d{2})/); if(m){const dt=new Date(+m[1],+m[2]-1,+m[3]); if(dt<new Date()) return 'dl-urgent'; return 'dl-normal'; } return 'dl-none';
+}
+
+const CAT_ORDER = ["分公司总经理潘总工作部署","分公司副总经理薛总工作安排","各营业部总经理及各业务部门负责人本周工作计划"];
+const CAT_ICON = {"分公司总经理潘总工作部署":"🏢","分公司副总经理薛总工作安排":"📈","各营业部总经理及各业务部门负责人本周工作计划":"📝"};
+const CAT_CLS = {"分公司总经理潘总工作部署":"cat1","分公司副总经理薛总工作安排":"cat2","各营业部总经理及各业务部门负责人本周工作计划":"cat3"};
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+let openSubId = null; // currently open sub-category id like "cat1-AI落地"
+
+function subId(cat, sub) { return cat.replace(/[^a-zA-Z一-龥]/g,'')+'-'+sub.replace(/[^a-zA-Z一-龥]/g,''); }
+
+function toggleDetail(cat, sub, items) {
+  const sid = subId(cat, sub);
+  const panel = document.getElementById('detail-'+sid);
+  if (openSubId === sid) {
+    panel.classList.remove('open');
+    openSubId = null;
+  } else {
+    if (openSubId) {
+      const oldPanel = document.getElementById('detail-'+openSubId);
+      if (oldPanel) oldPanel.classList.remove('open');
+    }
+    panel.classList.add('open');
+    openSubId = sid;
+    // scroll into view if needed
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function expandAll() {
+  document.querySelectorAll('.detail-panel').forEach(p => p.classList.add('open'));
+  openSubId = null;
+}
+
+function collapseAll() {
+  document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('open'));
+  openSubId = null;
+}
+
+function render() {
+  const filtered = getFiltered();
+  document.getElementById('filteredNum').textContent = filtered.length;
+
+  // Stats
+  const c1=filtered.filter(t=>t.cat===CAT_ORDER[0]).length;
+  const c2=filtered.filter(t=>t.cat===CAT_ORDER[1]).length;
+  const c3=filtered.filter(t=>t.cat===CAT_ORDER[2]).length;
+  document.getElementById('statsRow').innerHTML =
+    `<div class="stat-card"><div><div class="stat-num" style="color:var(--blue-dark)">${filtered.length}</div><div class="stat-label">待办事项总计</div></div></div>`+
+    `<div class="stat-card"><div><div class="stat-num" style="color:var(--blue)">${c1}</div><div class="stat-label">潘总工作部署</div></div></div>`+
+    `<div class="stat-card"><div><div class="stat-num" style="color:var(--amber)">${c2}</div><div class="stat-label">薛总工作安排</div></div></div>`+
+    `<div class="stat-card"><div><div class="stat-num" style="color:var(--emerald)">${c3}</div><div class="stat-label">各营业部/业务部门</div></div></div>`;
+
+  let html = '';
+  for (const cat of CAT_ORDER) {
+    const catItems = filtered.filter(t=>t.cat===cat);
+    if (!catItems.length) continue;
+
+    // Group by sub
+    const subMap = {};
+    for (const t of catItems) { if(!subMap[t.sub]) subMap[t.sub]=[]; subMap[t.sub].push(t); }
+
+    html += `<div class="cat-section">`;
+    html += `<div class="cat-header ${CAT_CLS[cat]}"><span class="cat-icon">${CAT_ICON[cat]}</span>${cat}<span class="cat-count">${Object.keys(subMap).length} 个子类 · ${catItems.length} 项</span></div>`;
+    html += `<div class="sub-grid">`;
+
+    for (const [sub, items] of Object.entries(subMap)) {
+      const sid = subId(cat, sub);
+      const persons = [...new Set(items.map(t=>t.person).filter(p=>p&&p!=='—'))];
+      const meetings = [...new Set(items.map(t=>t.meeting))];
+
+      html += `<div class="sub-card ${CAT_CLS[cat]}" onclick="toggleDetail('${esc(cat)}','${esc(sub)}',null)" id="card-${sid}">`;
+      html += `<div class="sub-card-top"><span class="sub-card-name">${esc(sub)}</span>`;
+      html += `<span class="sub-card-chevron">▼</span></div>`;
+      html += `<div class="sub-card-meta">`;
+      html += `<span class="sub-card-count ${CAT_CLS[cat]}">${items.length}</span><span class="sub-card-unit">项待办</span>`;
+      html += `<div class="sub-card-persons">`;
+      persons.slice(0,5).forEach(p=>{html+=`<span class="sub-avatar" style="background:${ac(p)}" title="${esc(p)}">${ini(p)}</span>`;});
+      if(persons.length>5) html+=`<span class="sub-avatar" style="background:var(--slate-300);color:var(--slate-600)">+${persons.length-5}</span>`;
+      html += `</div></div>`;
+      html += `<div class="sub-card-footer"><span>${persons.length} 位责任人</span><span>涉及 ${meetings.length} 期会议</span></div>`;
+      html += `</div>`;
+
+      // Detail panel (hidden by default)
+      html += `<div class="detail-panel" id="detail-${sid}">`;
+      html += `<div class="detail-header"><h3>${esc(sub)} — ${items.length} 项待办</h3>`;
+      html += `<button class="detail-close" onclick="event.stopPropagation();document.getElementById('detail-${sid}').classList.remove('open');openSubId=null;">✕</button></div>`;
+      html += `<div class="detail-tasks">`;
+      for (const t of items) {
+        const dl = dcls(t.deadline); const dlText = t.deadline==='—'?'暂无截止':t.deadline;
+        html += `<div class="task-row">`;
+        html += `<div class="task-row-left"><span class="task-row-num">#${t.num}</span><span class="task-row-meeting">${t.meeting.slice(5)}</span></div>`;
+        html += `<div class="task-row-body">${esc(t.task)}</div>`;
+        html += `<div class="task-row-footer"><span class="task-row-person">${esc(t.person)}</span><span class="task-row-deadline ${dl}">${dlText}</span></div>`;
+        html += `</div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  if (!filtered.length) html = `<div class="empty-state"><div class="icon">📭</div><p>没有匹配的待办事项，请调整筛选条件</p></div>`;
+
+  document.getElementById('content').innerHTML = html;
+  openSubId = null;
+}
+
+function resetFilters() {
+  document.getElementById('filterCat').value='all';
+  document.getElementById('filterPerson').value='all';
+  document.getElementById('filterMeeting').value='all';
+  render();
+}
+document.getElementById('filterCat').addEventListener('change',render);
+document.getElementById('filterPerson').addEventListener('change',render);
+document.getElementById('filterMeeting').addEventListener('change',render);
+render();
+</script></body></html>
