@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>营业部股票组合投顾签约数据看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', 'PingFang SC', sans-serif; background: #f5f6f8; color: #1e293b; min-height: 100vh; }
+
+/* ---- Header ---- */
+.header { background: #ffffff; padding: 24px 36px; border-bottom: 1px solid #e8ecf1; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.header h1 { font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: .5px; }
+.header .meta { font-size: 13px; color: #64748b; background: #f1f5f9; padding: 6px 14px; border-radius: 6px; }
+
+/* ---- Section Title ---- */
+.section-title { padding: 28px 36px 14px; font-size: 17px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+.section-title::before { content: ''; display: inline-block; width: 4px; height: 18px; background: #3b82f6; border-radius: 2px; }
+
+/* ---- KPI Row ---- */
+.kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; padding: 14px 36px; }
+.kpi-card { background: #ffffff; border: 1px solid #e8ecf1; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 2px rgba(0,0,0,.03); transition: box-shadow .2s; }
+.kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+.kpi-card .kpi-label { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+.kpi-card .kpi-value { font-size: 26px; font-weight: 700; color: #0f172a; }
+.kpi-card .kpi-sub { font-size: 11px; margin-top: 4px; color: #64748b; }
+.kpi-card .kpi-sub.up { color: #16a34a; }
+.kpi-card .kpi-sub.down { color: #dc2626; }
+
+/* ---- Grid Layouts ---- */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 36px 14px; }
+.grid-1 { padding: 0 36px 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; padding: 0 36px 14px; }
+
+/* ---- Panel ---- */
+.panel { background: #ffffff; border: 1px solid #e8ecf1; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+.panel h4 { font-size: 14px; font-weight: 600; color: #334155; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+.chart-box { width: 100%; height: 360px; }
+.chart-box.tall { height: 420px; }
+
+/* ---- Latest Week Table ---- */
+.latest-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.latest-table th, .latest-table td { padding: 10px 12px; text-align: center; border-bottom: 1px solid #f1f5f9; }
+.latest-table th { background: #f8fafc; color: #475569; font-weight: 600; font-size: 12px; white-space: nowrap; }
+.latest-table td { color: #334155; }
+.latest-table .product-name { text-align: left; font-weight: 600; color: #0f172a; }
+.latest-table .num-high { color: #16a34a; font-weight: 600; }
+.latest-table .num-warn { color: #dc2626; font-weight: 600; }
+.latest-table .num-neutral { color: #64748b; }
+.latest-table tr:hover td { background: #f8fafc; }
+.latest-table .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+/* ---- Weekly Change Mini Bars ---- */
+.mini-bar-wrap { display: flex; align-items: center; gap: 6px; justify-content: center; }
+.mini-bar { height: 6px; border-radius: 3px; }
+.mini-bar.up { background: #16a34a; }
+.mini-bar.down { background: #dc2626; }
+.mini-bar-label { font-size: 11px; color: #64748b; white-space: nowrap; }
+
+/* ---- Analysis Section ---- */
+.analysis-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.analysis-card { background: #ffffff; border: 1px solid #e8ecf1; border-radius: 10px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+.analysis-card .ac-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.analysis-card .ac-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.analysis-card .ac-icon.green { background: #dcfce7; color: #16a34a; }
+.analysis-card .ac-icon.amber { background: #fef3c7; color: #d97706; }
+.analysis-card .ac-icon.blue { background: #dbeafe; color: #2563eb; }
+.analysis-card .ac-icon.red { background: #fee2e2; color: #dc2626; }
+.analysis-card .ac-title { font-weight: 700; font-size: 14px; color: #0f172a; }
+.analysis-card .ac-body { font-size: 13px; color: #475569; line-height: 1.7; }
+.analysis-card .ac-body ul { padding-left: 16px; margin-top: 4px; }
+.analysis-card .ac-body li { margin-bottom: 4px; }
+.analysis-card .ac-body strong { color: #0f172a; }
+
+/* ---- Footer ---- */
+.footer { padding: 20px 36px; text-align: center; color: #94a3b8; font-size: 11px; border-top: 1px solid #e8ecf1; margin-top: 10px; background: #ffffff; }
+</style>
+</head>
+<body>
+
+<!-- ========== Header ========== -->
+<div class="header">
+  <h1>📊 营业部股票组合投顾签约数据看板</h1>
+  <div class="meta">数据周期：2026/5/8 — 2026/6/17（共6个统计周）</div>
+</div>
+
+<!-- ========== KPI 总览 ========== -->
+<div style="padding:14px 36px 0;font-size:12px;color:#ef4444;display:flex;align-items:center;gap:6px;">
+  ⚠️ 同一客户可能签约多个组合，以下看板所有数据均按<strong>产品组合维度</strong>独立展示，请勿跨产品简单加总。
+</div>
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-label">🏆 最大单品签约人数</div>
+    <div class="kpi-value" style="font-size:22px">富阳同行</div>
+    <div class="kpi-sub">94人（该组合独立数据）</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">🏆 最大单品签约资产</div>
+    <div class="kpi-value" style="font-size:22px">富阳同行</div>
+    <div class="kpi-sub">21,391万元（该组合独立数据）</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">📈 燎原先锋1号近2周新增</div>
+    <div class="kpi-value">+20人</div>
+    <div class="kpi-sub up">从5人增至29人，增速最快</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">⚠️ 钱说有乾坤近3周净变化</div>
+    <div class="kpi-value" style="color:#dc2626">-10人</div>
+    <div class="kpi-sub down">签约0人 / 解约10人</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">✅ 有效签约率最高</div>
+    <div class="kpi-value" style="font-size:22px">钱说有乾坤</div>
+    <div class="kpi-sub">36.7%（22/60人）</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">📦 在管产品组合数</div>
+    <div class="kpi-value">5</div>
+    <div class="kpi-sub">较第4周新增2个组合</div>
+  </div>
+</div>
+
+<!-- ========== 模块一：最近一周签约详情 ========== -->
+<div class="section-title">📅 模块一：最近一周各组合签约情况（2026/6/12 — 6/17）</div>
+<div class="grid-2">
+  <div class="panel">
+    <h4>各组合关键指标明细</h4>
+    <table class="latest-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">产品组合</th>
+          <th>总签约<br>人数</th>
+          <th>总签约资产<br>（万元）</th>
+          <th>有效签约<br>人数</th>
+          <th>有效签约<br>资产（万元）</th>
+          <th>有效<br>签约率</th>
+          <th>本周签约<br>人数</th>
+          <th>本周签约<br>资产（万元）</th>
+          <th>本周解约<br>人数</th>
+          <th>本周解约<br>资产（万元）</th>
+          <th>周净增<br>人数</th>
+        </tr>
+      </thead>
+      <tbody id="latest-table-body"></tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <h4>各组合总签约资产与有效签约资产对比</h4>
+    <div class="chart-box" id="chart-latest-asset-compare"></div>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="panel">
+    <h4>本周各组合签约 vs 解约人数</h4>
+    <div class="chart-box" id="chart-latest-sign-cancel"></div>
+  </div>
+  <div class="panel">
+    <h4>各组合高净值客户签约情况</h4>
+    <div class="chart-box" id="chart-latest-hnw"></div>
+  </div>
+</div>
+
+<!-- ========== 模块二：6周趋势变化 ========== -->
+<div class="section-title">📈 模块二：整个时期（6周）各组合签约情况变化</div>
+
+<!-- 签约数量变化 -->
+<div class="grid-1">
+  <div class="panel">
+    <h4>各组合总签约人数趋势变化（6周）</h4>
+    <div class="chart-box tall" id="chart-trend-count"></div>
+  </div>
+</div>
+<div class="grid-1">
+  <div class="panel">
+    <h4>各组合总签约资产趋势变化（万元，6周）</h4>
+    <div class="chart-box tall" id="chart-trend-asset"></div>
+  </div>
+</div>
+
+<!-- 每周签约/解约净变化 -->
+<div class="grid-2">
+  <div class="panel">
+    <h4>各组合每周签约人数变化</h4>
+    <div class="chart-box" id="chart-weekly-sign"></div>
+  </div>
+  <div class="panel">
+    <h4>各组合每周解约人数变化</h4>
+    <div class="chart-box" id="chart-weekly-cancel"></div>
+  </div>
+</div>
+
+<!-- 有效签约趋势 & 净签约热力图 -->
+<div class="grid-2">
+  <div class="panel">
+    <h4>各组合有效签约人数趋势</h4>
+    <div class="chart-box" id="chart-eff-trend"></div>
+  </div>
+  <div class="panel">
+    <h4>各组合每周净签约变化热力图</h4>
+    <div class="chart-box" id="chart-heatmap"></div>
+  </div>
+</div>
+
+<!-- 高净值趋势 -->
+<div class="grid-2">
+  <div class="panel">
+    <h4>高净值客户签约人数趋势</h4>
+    <div class="chart-box" id="chart-hnw-trend"></div>
+  </div>
+  <div class="panel">
+    <h4>高净值客户签约资产趋势（万元）</h4>
+    <div class="chart-box" id="chart-hnw-asset-trend"></div>
+  </div>
+</div>
+
+<!-- ========== 模块三：业务分析结论 ========== -->
+<div class="section-title">🔍 模块三：营业部股票组合投顾业务分析结论</div>
+<div style="padding: 0 36px 20px;">
+  <div class="analysis-grid">
+    <!-- 核心亮点 -->
+    <div class="analysis-card">
+      <div class="ac-header">
+        <div class="ac-icon green">✅</div>
+        <div class="ac-title">核心亮点</div>
+      </div>
+      <div class="ac-body">
+        <ul>
+          <li><strong>富阳同行</strong>是绝对核心支柱产品：签约94人、资产21,391万元，在5个组合中体量最大，且连续6周保持高基数稳定。</li>
+          <li><strong>燎原先锋1号</strong>增长势头强劲：近两周新增签约<strong>20人</strong>（5/29-6/17），资产从600万跃升至2,402万，增速为所有组合中最快。</li>
+          <li><strong>产品线扩充</strong>：第4周起新增燎原先锋1号与江北嘴贰号两个组合，营业部在管组合从3个扩展到5个，业务覆盖面扩大。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 待改进项 -->
+    <div class="analysis-card">
+      <div class="ac-header">
+        <div class="ac-icon amber">⚠️</div>
+        <div class="ac-title">需要关注的问题</div>
+      </div>
+      <div class="ac-body">
+        <ul>
+          <li><strong>钱说有乾坤持续净解约</strong>：近3周解约10人，签约人数从71降至60（-15.5%），需排查客户流失原因。</li>
+          <li><strong>有效签约率整体偏低</strong>：各组合有效签约率普遍不高（富阳同行18.1%、燎原先锋1号3.4%、江北嘴贰号0%），近八成签约客户升佣创收不足100元。</li>
+          <li><strong>江北嘴贰号有效转化为零</strong>：17人签约，有效签约人数为0，说明该组合未能给客户创造足够价值，需重新评估产品设计。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 建议措施 -->
+    <div class="analysis-card">
+      <div class="ac-header">
+        <div class="ac-icon blue">💡</div>
+        <div class="ac-title">改进建议</div>
+      </div>
+      <div class="ac-body">
+        <ul>
+          <li><strong>聚焦高净值客户</strong>：高净值客户是各组合的签约资产主力（如富阳同行19名高净值贡献17,544万/82%），应将服务资源向此类客户倾斜。</li>
+          <li><strong>复制"钱说有乾坤"模式</strong>：该组合有效签约率<strong>36.7%</strong>为全产品最高，其投顾策略可提炼为标杆推广至其他组合。</li>
+          <li><strong>建立解约预警机制</strong>：针对钱说有乾坤等出现持续净解约的产品，设置周度解约监控阈值，提前介入挽留。</li>
+          <li><strong>评估江北嘴贰号存续价值</strong>：建议对该组合进行专项复盘，若下周期仍无有效签约，考虑策略调整或产品整合。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 补充：数据质量说明 -->
+<div style="padding: 0 36px 14px;">
+  <div class="panel" style="background:#fefce8; border-color:#fde68a;">
+    <h4 style="border-bottom-color:#fde68a;">📝 数据说明</h4>
+    <div style="font-size:13px; color:#713f12; line-height:1.8;">
+      <strong>统计口径：</strong>"有效签约"定义为升佣创收100元以上的签约客户；"高净值客户"指签约资产较高的核心客群。<br>
+      <strong>重要提示：</strong>同一客户可能同时签约多个股票组合，因此本看板所有数据均按<strong>产品组合维度</strong>独立展示，不可跨产品简单加总（如各组合签约人数之和≠去重后的营业部总客户数）。<br>
+      <strong>数据局限：</strong>燎原先锋1号与江北嘴贰号为第4周（5/29起）新增统计的组合，前3周无数据；中心化组合规模较小（7-8人），变化幅度有限。<br>
+      <strong>周期说明：</strong>第1周(5/8-5/14)富阳同行签约资产含一笔大额6,204万元，属异常波动，后续周回归正常。
+    </div>
+  </div>
+</div>
+
+<div class="footer">数据来源：周度签约解约数据统计.xlsx &nbsp;|&nbsp; 统计范围：2026/5/8 — 2026/6/17（6个统计周）&nbsp;|&nbsp; 制表单位：营业部投顾业务组</div>
+
+<script>
+// ==================== 原始数据 ====================
+const periods = ['20260508-20260514','20260515-20260521','20260522-20260528','20260529-20260604','20260605-20260611','20260612-20260617'];
+const periodLabels = ['5/8-5/14','5/15-5/21','5/22-5/28','5/29-6/4','6/5-6/11','6/12-6/17'];
+const periodLabelsFull = ['第1周\n5/8-5/14','第2周\n5/15-5/21','第3周\n5/22-5/28','第4周\n5/29-6/4','第5周\n6/5-6/11','第6周\n6/12-6/17'];
+
+const rawData = {
+  '20260612-20260617': [
+    {name:'燎原先锋1号', totalPpl:29, totalAsset:2401.6, effPpl:1, effAsset:65, wkSign:13, wkSignAsset:930, wkCancel:0, wkCancelAsset:0, hnwPpl:4, hnwAsset:1246.93, hnwEffPpl:0, hnwEffAsset:0},
+    {name:'江北嘴贰号', totalPpl:17, totalAsset:1140.64, effPpl:0, effAsset:0, wkSign:7, wkSignAsset:202.3, wkCancel:0, wkCancelAsset:0, hnwPpl:2, hnwAsset:636.33, hnwEffPpl:0, hnwEffAsset:0},
+    {name:'富阳同行', totalPpl:94, totalAsset:21390.61, effPpl:17, effAsset:3582.59, wkSign:0, wkSignAsset:0, wkCancel:1, wkCancelAsset:82.27, hnwPpl:19, hnwAsset:17544.36, hnwEffPpl:5, hnwEffAsset:2695.71},
+    {name:'钱说有乾坤', totalPpl:60, totalAsset:4127.84, effPpl:22, effAsset:2223.18, wkSign:0, wkSignAsset:0, wkCancel:3, wkCancelAsset:138.53, hnwPpl:5, hnwAsset:2337.39, hnwEffPpl:3, hnwEffAsset:894.15},
+    {name:'中心化组合', totalPpl:8, totalAsset:280.8, effPpl:3, effAsset:241.98, wkSign:0, wkSignAsset:0, wkCancel:0, wkCancelAsset:0, hnwPpl:1, hnwAsset:198.73, hnwEffPpl:1, hnwEffAsset:198.73},
+  ],
+  '20260605-20260611': [
+    {name:'燎原先锋1号', totalPpl:16, totalAsset:1483.39, effPpl:1, effAsset:62.42, wkSign:12, wkSignAsset:1175.37, wkCancel:1, wkCancelAsset:293.01, hnwPpl:3, hnwAsset:828.99, hnwEffPpl:0, hnwEffAsset:0},
+    {name:'江北嘴贰号', totalPpl:10, totalAsset:935.84, effPpl:0, effAsset:0, wkSign:7, wkSignAsset:690.23, wkCancel:1, wkCancelAsset:293.01, hnwPpl:2, hnwAsset:640.77, hnwEffPpl:0, hnwEffAsset:0},
+    {name:'富阳同行', totalPpl:95, totalAsset:22326.11, effPpl:17, effAsset:3613.9, wkSign:3, wkSignAsset:127.03, wkCancel:1, wkCancelAsset:35.41, hnwPpl:19, hnwAsset:18362.62, hnwEffPpl:5, hnwEffAsset:2730.9},
+    {name:'钱说有乾坤', totalPpl:63, totalAsset:4276.46, effPpl:22, effAsset:2228.68, wkSign:0, wkSignAsset:0, wkCancel:3, wkCancelAsset:278.94, hnwPpl:6, hnwAsset:2540.47, hnwEffPpl:4, hnwEffAsset:1093.87},
+    {name:'中心化组合', totalPpl:8, totalAsset:279.72, effPpl:3, effAsset:240.47, wkSign:0, wkSignAsset:0, wkCancel:0, wkCancelAsset:0, hnwPpl:1, hnwAsset:200.62, hnwEffPpl:1, hnwEffAsset:200.62},
+  ],
+  '20260529-20260604': [
+    {name:'燎原先锋1号', totalPpl:5, totalAsset:600.13, effPpl:0, effAsset:0, wkSign:5, wkSignAsset:600.13, wkCancel:0, wkCancelAsset:0, hnwPpl:2, hnwAsset:498.4, hnwEffPpl:0, hnwEffAsset:0},
+    {name:'江北嘴贰号', totalPpl:4, totalAsset:532.5, effPpl:0, effAsset:0, wkSign:4, wkSignAsset:532.5, wkCancel:0, wkCancelAsset:0, hnwPpl:2, hnwAsset:498.4, hnwEffPpl:0, hnwEffAsset:0},
+    {name:'富阳同行', totalPpl:93, totalAsset:22701.61, effPpl:17, effAsset:3659.23, wkSign:0, wkSignAsset:0, wkCancel:0, wkCancelAsset:0, hnwPpl:20, hnwAsset:18778.79, hnwEffPpl:5, hnwEffAsset:2774.39},
+    {name:'钱说有乾坤', totalPpl:66, totalAsset:4608.89, effPpl:20, effAsset:2060.07, wkSign:0, wkSignAsset:0, wkCancel:4, wkCancelAsset:217.17, hnwPpl:7, hnwAsset:2838.43, hnwEffPpl:3, hnwEffAsset:909.95},
+    {name:'中心化组合', totalPpl:8, totalAsset:280.77, effPpl:3, effAsset:240.58, wkSign:1, wkSignAsset:1.28, wkCancel:0, wkCancelAsset:0, hnwPpl:1, hnwAsset:202.76, hnwEffPpl:1, hnwEffAsset:202.76},
+  ],
+  '20260522-20260528': [
+    {name:'富阳同行', totalPpl:93, totalAsset:22261.82, effPpl:17, effAsset:3632.64, wkSign:0, wkSignAsset:0, wkCancel:0, wkCancelAsset:0, hnwPpl:17, hnwAsset:17499.49, hnwEffPpl:5, hnwEffAsset:2752.92},
+    {name:'钱说有乾坤', totalPpl:70, totalAsset:4781.11, effPpl:19, effAsset:2149.26, wkSign:0, wkSignAsset:0, wkCancel:1, wkCancelAsset:3.33, hnwPpl:7, hnwAsset:2682.22, hnwEffPpl:3, hnwEffAsset:948.17},
+    {name:'中心化组合', totalPpl:7, totalAsset:284.79, effPpl:3, effAsset:241.25, wkSign:0, wkSignAsset:0, wkCancel:0, wkCancelAsset:0, hnwPpl:1, hnwAsset:210.76, hnwEffPpl:1, hnwEffAsset:210.76},
+  ],
+  '20260515-20260521': [
+    {name:'富阳同行', totalPpl:93, totalAsset:22167.01, effPpl:16, effAsset:3410.44, wkSign:1, wkSignAsset:36.67, wkCancel:0, wkCancelAsset:0, hnwPpl:17, hnwAsset:17556.5, hnwEffPpl:4, hnwEffAsset:2536.89},
+    {name:'钱说有乾坤', totalPpl:71, totalAsset:4728.14, effPpl:19, effAsset:2178.25, wkSign:0, wkSignAsset:0, wkCancel:0, wkCancelAsset:0, hnwPpl:6, hnwAsset:2435.42, hnwEffPpl:3, hnwEffAsset:961.78},
+    {name:'中心化组合', totalPpl:7, totalAsset:287.17, effPpl:2, effAsset:215.99, wkSign:0, wkSignAsset:0, wkCancel:0, wkCancelAsset:0, hnwPpl:1, hnwAsset:211.4, hnwEffPpl:1, hnwEffAsset:211.4},
+  ],
+  '20260508-20260514': [
+    {name:'富阳同行', totalPpl:92, totalAsset:21850.52, effPpl:16, effAsset:3374.54, wkSign:2, wkSignAsset:6203.72, wkCancel:2, wkCancelAsset:88.74, hnwPpl:17, hnwAsset:17525.15, hnwEffPpl:4, hnwEffAsset:0},
+    {name:'钱说有乾坤', totalPpl:71, totalAsset:4695.75, effPpl:19, effAsset:2188.61, wkSign:0, wkSignAsset:0, wkCancel:1, wkCancelAsset:39.29, hnwPpl:6, hnwAsset:2413.66, hnwEffPpl:3, hnwEffAsset:0},
+    {name:'中心化组合', totalPpl:7, totalAsset:282.47, effPpl:2, effAsset:214.79, wkSign:1, wkSignAsset:39.45, wkCancel:0, wkCancelAsset:0, hnwPpl:1, hnwAsset:211.21, hnwEffPpl:1, hnwEffAsset:0},
+  ],
+};
+
+// ==================== 辅助函数 ====================
+const products = ['燎原先锋1号','江北嘴贰号','富阳同行','钱说有乾坤','中心化组合'];
+const colors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444'];
+const colorBg = ['#eff6ff','#ecfdf5','#fffbeb','#f5f3ff','#fef2f2'];
+
+function getProductData(product, field) {
+  return periods.map(p => {
+    const items = rawData[p] || [];
+    const item = items.find(i => i.name === product);
+    return item ? (item[field] || 0) : null;
+  });
+}
+
+function fmtWan(v) { return v != null ? v.toFixed(0) : '-'; }
+function fmtPct(a, b) { return b > 0 ? (a / b * 100).toFixed(1) + '%' : '0%'; }
+
+// ==================== 模块一：最新一周表格 ====================
+(function(){
+  const latest = rawData['20260612-20260617'];
+  const tbody = document.getElementById('latest-table-body');
+  let html = '';
+  latest.forEach((item, i) => {
+    const net = item.wkSign - item.wkCancel;
+    const effRate = fmtPct(item.effPpl, item.totalPpl);
+    html += '<tr>';
+    html += `<td class="product-name"><span class="dot" style="background:${colors[i]}"></span>${item.name}</td>`;
+    html += `<td><strong>${item.totalPpl}</strong></td>`;
+    html += `<td>${fmtWan(item.totalAsset)}</td>`;
+    html += `<td class="${item.effPpl > 0 ? 'num-high' : 'num-neutral'}">${item.effPpl}</td>`;
+    html += `<td>${fmtWan(item.effAsset)}</td>`;
+    html += `<td class="${item.effPpl / item.totalPpl >= 0.3 ? 'num-high' : item.effPpl === 0 ? 'num-warn' : ''}">${effRate}</td>`;
+    html += `<td class="${item.wkSign > 0 ? 'num-high' : 'num-neutral'}">${item.wkSign > 0 ? '+' + item.wkSign : '0'}</td>`;
+    html += `<td>${item.wkSignAsset > 0 ? fmtWan(item.wkSignAsset) : '0'}</td>`;
+    html += `<td class="${item.wkCancel > 0 ? 'num-warn' : 'num-neutral'}">${item.wkCancel > 0 ? '-' + item.wkCancel : '0'}</td>`;
+    html += `<td>${item.wkCancelAsset > 0 ? '-' + fmtWan(item.wkCancelAsset) : '0'}</td>`;
+    html += `<td class="${net > 0 ? 'num-high' : net < 0 ? 'num-warn' : ''}">${net > 0 ? '+' + net : net}</td>`;
+    html += '</tr>';
+  });
+  // 注：各组合数据独立展示，不设合计行 —— 同一客户可能签约多个组合，跨产品加总会重复计算
+  tbody.innerHTML = html;
+})();
+
+// ==================== 图表主题色（白色背景适配） ====================
+function initWhiteChart(domId) {
+  const chart = echarts.init(document.getElementById(domId));
+  return chart;
+}
+
+// ---- 最新一周：总资产 vs 有效资产对比 ----
+(function(){
+  const chart = initWhiteChart('chart-latest-asset-compare');
+  const latest = rawData['20260612-20260617'];
+  const names = latest.map(i => i.name);
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => fmtWan(v) + ' 万元' },
+    legend: { data: ['总签约资产', '有效签约资产'], bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+    grid: { left: 90, right: 30, top: 10, bottom: 35 },
+    xAxis: { type: 'value', name: '万元', nameTextStyle: { color: '#64748b' }, axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9' } } },
+    yAxis: { type: 'category', data: names, axisLabel: { color: '#334155', fontWeight: 600, fontSize: 12 }, axisLine: { lineStyle: { color: '#e8ecf1' } } },
+    series: [
+      { name: '总签约资产', type: 'bar', data: latest.map(i => i.totalAsset), barWidth: 14, itemStyle: { color: '#3b82f6', borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: 'right', color: '#3b82f6', fontSize: 11, formatter: p => fmtWan(p.value) } },
+      { name: '有效签约资产', type: 'bar', data: latest.map(i => i.effAsset), barWidth: 14, itemStyle: { color: '#10b981', borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: 'right', color: '#10b981', fontSize: 11, formatter: p => fmtWan(p.value) } },
+    ]
+  });
+})();
+
+// ---- 最新一周：签约 vs 解约人数 ----
+(function(){
+  const chart = initWhiteChart('chart-latest-sign-cancel');
+  const latest = rawData['20260612-20260617'];
+  const names = latest.map(i => i.name);
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['本周签约', '本周解约'], bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+    grid: { left: 90, right: 30, top: 10, bottom: 35 },
+    xAxis: { type: 'value', name: '人数', nameTextStyle: { color: '#64748b' }, axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9' } } },
+    yAxis: { type: 'category', data: names, axisLabel: { color: '#334155', fontWeight: 600, fontSize: 12 } },
+    series: [
+      { name: '本周签约', type: 'bar', data: latest.map(i => i.wkSign), barWidth: 14, itemStyle: { color: '#3b82f6', borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: 'right', color: '#3b82f6', fontSize: 11 } },
+      { name: '本周解约', type: 'bar', data: latest.map(i => i.wkCancel), barWidth: 14, itemStyle: { color: '#ef4444', borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: 'right', color: '#ef4444', fontSize: 11 } },
+    ]
+  });
+})();
+
+// ---- 最新一周：高净值客户 ----
+(function(){
+  const chart = initWhiteChart('chart-latest-hnw');
+  const latest = rawData['20260612-20260617'];
+  const names = latest.map(i => i.name);
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => fmtWan(v) + (v < 100 ? '人' : ' 万元') },
+    legend: { data: ['高净值人数', '高净值资产(万元)'], bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+    grid: { left: 90, right: 50, top: 10, bottom: 35 },
+    xAxis: [
+      { type: 'value', name: '人数', nameTextStyle: { color: '#f59e0b' }, axisLabel: { color: '#64748b' }, splitLine: { show: false } },
+    ],
+    yAxis: [
+      { type: 'category', data: names, axisLabel: { color: '#334155', fontWeight: 600, fontSize: 12 } },
+      { type: 'value', name: '万元', nameTextStyle: { color: '#8b5cf6' }, axisLabel: { color: '#64748b' }, splitLine: { show: false } },
+    ],
+    series: [
+      { name: '高净值人数', type: 'bar', data: latest.map(i => i.hnwPpl), barWidth: 14, itemStyle: { color: '#f59e0b', borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: 'right', color: '#f59e0b', fontSize: 11 } },
+      { name: '高净值资产(万元)', type: 'bar', data: latest.map(i => i.hnwAsset), barWidth: 14, yAxisIndex: 1,
+        itemStyle: { color: '#8b5cf6', borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: '#8b5cf6', fontSize: 11, formatter: p => fmtWan(p.value) } },
+    ]
+  });
+})();
+
+// ==================== 模块二：6周趋势 ====================
+
+// ---- 总签约人数趋势 ----
+(function(){
+  const chart = initWhiteChart('chart-trend-count');
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: products, bottom: 0, itemWidth: 14, itemHeight: 14, textStyle: { fontSize: 12 } },
+    grid: { left: 55, right: 25, top: 15, bottom: 40 },
+    xAxis: { type: 'category', data: periodLabelsFull, axisLabel: { color: '#64748b', fontSize: 11 }, axisLine: { lineStyle: { color: '#e8ecf1' } } },
+    yAxis: { type: 'value', name: '签约人数', nameTextStyle: { color: '#64748b' }, axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } } },
+    series: products.map((p, i) => ({
+      name: p, type: 'line', data: getProductData(p, 'totalPpl'), color: colors[i], lineStyle: { width: 2.5 },
+      symbol: 'circle', symbolSize: 7, connectNulls: true,
+      markPoint: { data: [{ type: 'max', name: '最高' }], symbolSize: 40, label: { fontSize: 10 } },
+    }))
+  });
+})();
+
+// ---- 总签约资产趋势 ----
+(function(){
+  const chart = initWhiteChart('chart-trend-asset');
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => fmtWan(v) + ' 万元' },
+    legend: { data: products, bottom: 0, itemWidth: 14, itemHeight: 14, textStyle: { fontSize: 12 } },
+    grid: { left: 65, right: 25, top: 15, bottom: 40 },
+    xAxis: { type: 'category', data: periodLabelsFull, axisLabel: { color: '#64748b', fontSize: 11 }, axisLine: { lineStyle: { color: '#e8ecf1' } } },
+    yAxis: { type: 'value', name: '万元', nameTextStyle: { color: '#64748b' }, axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } } },
+    series: products.map((p, i) => ({
+      name: p, type: 'line', data: getProductData(p, 'totalAsset'), color: colors[i], lineStyle: { width: 2.5 },
+      symbol: 'circle', symbolSize: 7, connectNulls: true,
+      areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,
+        [{offset:0, color: colors[i]+'30'}, {offset:1, color: colors[i]+'05'}]) },
+    }))
+  });
+})();
+
+// ---- 每周签约人数 ----
+(function(){
+  const chart = initWhiteChart('chart-weekly-sign');
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: products, bottom: 0, itemWidth: 14, itemHeight: 14, textStyle: { fontSize: 11 } },
+    grid: { left: 50, right: 20, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: periodLabels, axisLabel: { color: '#64748b', fontSize: 11 } },
+    yAxis: { type: 'value', name: '人数', nameTextStyle: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } } },
+    series: products.map((p, i) => ({
+      name: p, type: 'bar', data: getProductData(p, 'wkSign'), color: colors[i], barWidth: 14,
+    }))
+  });
+})();
+
+// ---- 每周解约人数 ----
+(function(){
+  const chart = initWhiteChart('chart-weekly-cancel');
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: products, bottom: 0, itemWidth: 14, itemHeight: 14, textStyle: { fontSize: 11 } },
+    grid: { left: 50, right: 20, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: periodLabels, axisLabel: { color: '#64748b', fontSize: 11 } },
+    yAxis: { type: 'value', name: '人数', nameTextStyle: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } } },
+    series: products.map((p, i) => ({
+      name: p, type: 'bar', data: getProductData(p, 'wkCancel'), color: colors[i], barWidth: 14,
+    }))
+  });
+})();
+
+// ---- 有效签约人数趋势 ----
+(function(){
+  const chart = initWhiteChart('chart-eff-trend');
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: products, bottom: 0, itemWidth: 14, itemHeight: 14, textStyle: { fontSize: 12 } },
+    grid: { left: 50, right: 20, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: periodLabels, axisLabel: { color: '#64748b', fontSize: 11 } },
+    yAxis: { type: 'value', name: '有效签约人数', nameTextStyle: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } } },
+    series: products.map((p, i) => ({
+      name: p, type: 'line', data: getProductData(p, 'effPpl'), color: colors[i], lineStyle: { width: 2.5, type: 'dashed' },
+      symbol: 'diamond', symbolSize: 8, connectNulls: true,
+    }))
+  });
+})();
+
+// ---- 净签约热力图 ----
+(function(){
+  const chart = initWhiteChart('chart-heatmap');
+  const heatData = [];
+  const yLabels = products.slice().reverse();
+  yLabels.forEach((p, yi) => {
+    periods.forEach((per, xi) => {
+      const items = rawData[per] || [];
+      const item = items.find(i => i.name === p);
+      if (item) heatData.push([xi, yi, item.wkSign - item.wkCancel]);
+    });
+  });
+  chart.setOption({
+    tooltip: {
+      formatter: p => {
+        const per = periodLabels[p.data[0]];
+        const prod = yLabels[p.data[1]];
+        const v = p.data[2];
+        return `<strong>${prod}</strong><br/>周期：${per}<br/>净签约人数：<strong>${v >= 0 ? '+' : ''}${v}</strong>`;
+      }
+    },
+    grid: { left: 100, right: 50, top: 10, bottom: 50 },
+    xAxis: { type: 'category', data: periodLabels, axisLabel: { color: '#64748b', fontSize: 11 } },
+    yAxis: { type: 'category', data: yLabels, axisLabel: { color: '#334155', fontWeight: 600, fontSize: 12 } },
+    visualMap: { min: -4, max: 13, calculable: true, orient: 'horizontal', left: 'center', bottom: 0,
+      inRange: { color: ['#fca5a5','#f1f5f9','#86efac'] },
+      text: ['净增+', '净减-'], textStyle: { color: '#64748b', fontSize: 11 }
+    },
+    series: [{
+      type: 'heatmap', data: heatData,
+      label: { show: true, color: '#0f172a', fontSize: 13, fontWeight: 600 },
+      emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,.15)' } }
+    }]
+  });
+})();
+
+// ---- 高净值人数趋势 ----
+(function(){
+  const chart = initWhiteChart('chart-hnw-trend');
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: products, bottom: 0, itemWidth: 14, itemHeight: 14, textStyle: { fontSize: 12 } },
+    grid: { left: 50, right: 20, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: periodLabels, axisLabel: { color: '#64748b', fontSize: 11 } },
+    yAxis: { type: 'value', name: '人数', nameTextStyle: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } } },
+    series: products.map((p, i) => ({
+      name: p, type: 'line', data: getProductData(p, 'hnwPpl'), color: colors[i], lineStyle: { width: 2.5, type: 'dotted' },
+      symbol: 'triangle', symbolSize: 9, connectNulls: true,
+    }))
+  });
+})();
+
+// ---- 高净值资产趋势 ----
+(function(){
+  const chart = initWhiteChart('chart-hnw-asset-trend');
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => fmtWan(v) + ' 万元' },
+    legend: { data: products, bottom: 0, itemWidth: 14, itemHeight: 14, textStyle: { fontSize: 12 } },
+    grid: { left: 65, right: 20, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: periodLabels, axisLabel: { color: '#64748b', fontSize: 11 } },
+    yAxis: { type: 'value', name: '万元', nameTextStyle: { color: '#64748b' }, splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } } },
+    series: products.map((p, i) => ({
+      name: p, type: 'line', data: getProductData(p, 'hnwAsset'), color: colors[i], lineStyle: { width: 2.5, type: 'dotted' },
+      symbol: 'triangle', symbolSize: 9, connectNulls: true,
+    }))
+  });
+})();
+
+// ==================== 响应式 ====================
+window.addEventListener('resize', () => {
+  document.querySelectorAll('.chart-box').forEach(el => {
+    const instance = echarts.getInstanceByDom(el);
+    if (instance) instance.resize();
+  });
+});
+</script>
+</body>
+</html>
